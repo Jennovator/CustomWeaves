@@ -12,9 +12,20 @@ const Shirt = () => {
   const logoTexture = useTexture(snap.logoDecal);
   const fullTexture = useTexture(snap.fullDecal);
 
+  // use to change the quality of the texture
+  logoTexture.anisotropy=16;
+
+  // Apply the color smoothly and not dramatically
+  useFrame((state, delta) => easing.dampC(materials.lambert1.color,
+    snap.color, 0.25, delta))
+
+  // Way to make the shirt update when color changes (react will render the model when the state changes)
+  // recreate a string of the current state and passed it in
+  const stateString = JSON.stringify(snap);  
+
   // Display the shirt on the canvas
   return (
-    <group>
+    <group key={stateString}>
       <mesh
         castShadow
         geometry={nodes.T_Shirt_male.geometry}
@@ -23,9 +34,31 @@ const Shirt = () => {
         dispose={null}
       >
 
+      {/* To determine whether it is showing the full texture or not */}
+      {snap.isFullTexture && (
+        <Decal
+          position={[0, 0, 0]}
+          rotation={[0, 0, 0]}
+          scale={1}
+          map={fullTexture}
+        />
+      )}
+
+      {/* To determine whether it is showing the logo or not */}
+      {snap.isLogoTexture && (
+        <Decal
+          position={[0, 0.04, 0.15]}
+          rotation={[0, 0, 0]}
+          scale={0.15}
+          map={logoTexture}
+          depthTest={false}
+          depthWrite={true}
+        />
+      )}
+
       </mesh>
     </group>
   )
 }
 
-export default Shirt
+export default Shirt;
