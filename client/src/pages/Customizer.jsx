@@ -23,23 +23,31 @@ const Customizer = () => {
     stylishShirt: false
   });
 
+  // State to track whether the picker is open or closed
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+
+  // Show or hide the picker based on the isPickerOpen state
+  const togglePicker = () => {
+    setIsPickerOpen(!isPickerOpen);
+  };
+
   // show tab content depending on the activeTab
   const generateTabContent = () => {
     switch (activeEditorTab) {
       case "colorpicker":
         return <ColorPicker />
       case "filepicker":
-        return <FilePicker 
+        return <FilePicker
           file={file}
           setFile={setFile}
           readFile={readFile}
         />
       case "aipicker":
-        return <AIPicker 
-        prompt={prompt}
-        setPrompt={setPrompt}
-        generatingImg={generatingImg}
-        handleSubmit={handleSubmit}
+        return <AIPicker
+          prompt={prompt}
+          setPrompt={setPrompt}
+          generatingImg={generatingImg}
+          handleSubmit={handleSubmit}
         />
       default:
         return null;
@@ -47,19 +55,19 @@ const Customizer = () => {
   }
 
   const handleSubmit = async (type) => {
-    if(!prompt) return alert("Please enter a prompt");
+    if (!prompt) return alert("Please enter a prompt");
 
-    try{
+    try {
       // call the backend to generate an AI image
-      
-    } catch(error) {
+
+    } catch (error) {
       alert(error)
     } finally {
       setGeneratingImg(false);
       setActiveEditorTab("");
     }
   }
-  
+
   // check if the logo/texture is showing or not
   const handleActiveFilterTab = (tabName) => {
     switch (tabName) {
@@ -75,7 +83,7 @@ const Customizer = () => {
 
     // after setting the state, set activeFilterTab to update the UI
     setActiveFilterTab((prevState) => {
-      return{
+      return {
         ...prevState,
         [tabName]: !prevState[tabName]
       }
@@ -86,7 +94,7 @@ const Customizer = () => {
     const decalType = DecalTypes[type];
     state[decalType.stateProperty] = result; // update the values of the state
 
-    if(!activeFilterTab[decalType.filterTab]){
+    if (!activeFilterTab[decalType.filterTab]) {
       handleActiveFilterTab(decalType.filterTab);
     }
   }
@@ -106,7 +114,7 @@ const Customizer = () => {
       {!snap.intro && (
         <>
           {/* Display the tab on the left side of the canvas */}
-          <motion.div 
+          <motion.div
             key="custom"
             className="absolute top-0 left-0 z-10"
             {...slideAnimation('left')}
@@ -114,18 +122,21 @@ const Customizer = () => {
             <div className="flex items-center min-h-screen">
               <div className="editortabs-container tabs">
                 {EditorTabs.map((tab) => (
-                  <Tab 
+                  <Tab
                     key={tab.name}
                     tab={tab}
-                    handleClick={() => setActiveEditorTab(tab.name)}
+                    handleClick={() => {
+                      setActiveEditorTab(tab.name); 
+                      togglePicker();
+                    }}
                   />
                 ))}
 
-                {generateTabContent()}
+                {isPickerOpen && generateTabContent()}
               </div>
             </div>
           </motion.div>
-          
+
           {/* Display the back button */}
           <motion.div
             className="absolute z-10 top-5 right-5"
@@ -138,21 +149,21 @@ const Customizer = () => {
               customeStyles="w-fit px-4 py-2.5 font-bold tex-sm"
             />
           </motion.div>
-          
+
           {/* Display the three buttons (turn off/on the: 1. logo or 2. decal, and 3. download the shirt) on the bottom part */}
           <motion.div
             className="filtertabs-container"
             {...slideAnimation('up')}
           >
             {FilterTabs.map((tab) => (
-                  <Tab 
-                    key={tab.name}
-                    tab={tab}
-                    isFilterTab
-                    isActiveTab={activeFilterTab[tab.name]}
-                    handleClick={() => handleActiveFilterTab(tab.name)}
-                  />
-                ))}
+              <Tab
+                key={tab.name}
+                tab={tab}
+                isFilterTab
+                isActiveTab={activeFilterTab[tab.name]}
+                handleClick={() => handleActiveFilterTab(tab.name)}
+              />
+            ))}
           </motion.div>
         </>
       )}
