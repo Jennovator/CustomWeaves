@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useSnapshot } from 'valtio';
+
 import config from '../config/config';
 import state from '../store';
 import { download } from '../assets';
 import { downloadCanvasToImage, reader } from '../config/helpers';
 import { EditorTabs, FilterTabs, DecalTypes } from '../config/constants';
 import { fadeAnimation, slideAnimation } from '../config/motion';
-import { AIPicker, ColorPicker, FilePicker, CustomButton, Tab } from '../components';
+import { AIPicker, ColorPicker, CustomButton, FilePicker, Tab } from '../components';
 
 const Customizer = () => {
   const snap = useSnapshot(state);
@@ -20,8 +21,8 @@ const Customizer = () => {
   const [activeEditorTab, setActiveEditorTab] = useState("");
   const [activeFilterTab, setActiveFilterTab] = useState({
     logoShirt: true,
-    stylishShirt: false
-  });
+    stylishShirt: false,
+  })
 
   // State to track whether the picker is open or closed
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -59,6 +60,25 @@ const Customizer = () => {
 
     try {
       // call the backend to generate an AI image
+      setGeneratingImg(true);
+
+      const response = await fetch('http://localhost:8080/api/v1/dalle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt,
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json();
+        // to update the logo on the shirt based on the prompt result
+        handleDecals(type, `data:image/png;base64,${data.photo}`);
+      } else {
+        alert("Error: Failed to generate AI image.");
+      }
 
     } catch (error) {
       alert(error)
@@ -68,35 +88,38 @@ const Customizer = () => {
     }
   }
 
+  const handleDecals = (type, result) => {
+    const decalType = DecalTypes[type];
+
+    state[decalType.stateProperty] = result; // update the values of the state
+
+    if (!activeFilterTab[decalType.filterTab]) {
+      handleActiveFilterTab(decalType.filterTab)
+    }
+  }
+
   // check if the logo/texture is showing or not
   const handleActiveFilterTab = (tabName) => {
     switch (tabName) {
       case "logoShirt":
         state.isLogoTexture = !activeFilterTab[tabName]; // to toggle it on or off
         break;
-      case "stylelishShirt":
+      case "stylishShirt":
         state.isFullTexture = !activeFilterTab[tabName];
+        break;
       default:
         state.isLogoTexture = true;
         state.isFullTexture = false;
+        break;
     }
 
-    // after setting the state, set activeFilterTab to update the UI
+    // after setting the state, activeFilterTab is updated
     setActiveFilterTab((prevState) => {
       return {
         ...prevState,
         [tabName]: !prevState[tabName]
       }
     })
-  }
-
-  const handleDecals = (type, result) => {
-    const decalType = DecalTypes[type];
-    state[decalType.stateProperty] = result; // update the values of the state
-
-    if (!activeFilterTab[decalType.filterTab]) {
-      handleActiveFilterTab(decalType.filterTab);
-    }
   }
 
   // take in the type of the file and passed to reader function to get the file data
@@ -114,6 +137,7 @@ const Customizer = () => {
       {!snap.intro && (
         <>
           {/* Display the tab on the left side of the canvas */}
+
           <motion.div
             key="custom"
             className="absolute top-0 left-0 z-10"
@@ -126,9 +150,10 @@ const Customizer = () => {
                     key={tab.name}
                     tab={tab}
                     handleClick={() => {
-                      setActiveEditorTab(tab.name); 
+                      setActiveEditorTab(tab.name);
                       togglePicker();
                     }}
+
                   />
                 ))}
 
@@ -137,7 +162,7 @@ const Customizer = () => {
             </div>
           </motion.div>
 
-          {/* Display the back button */}
+          {/* Display the back and download button */}
           <motion.div
             className="absolute z-10 top-5 right-5"
             {...fadeAnimation}
@@ -146,14 +171,14 @@ const Customizer = () => {
               type="filled"
               title="Go Back"
               handleClick={() => state.intro = true}
-              customeStyles="w-fit px-4 py-2.5 font-bold tex-sm"
+              customStyles="w-fit px-4 py-2.5 font-bold text-sm"
             />
           </motion.div>
 
           {/* Display the three buttons (turn off/on the: 1. logo or 2. decal, and 3. download the shirt) on the bottom part */}
           <motion.div
-            className="filtertabs-container"
-            {...slideAnimation('up')}
+            className='filtertabs-container'
+            {...slideAnimation("up")}
           >
             {FilterTabs.map((tab) => (
               <Tab
@@ -171,4 +196,4 @@ const Customizer = () => {
   )
 }
 
-export default Customizer;
+export default Customizer
